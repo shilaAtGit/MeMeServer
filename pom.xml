@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.4.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.shila</groupId>
+	<artifactId>weMail</artifactId>
+	<version>0.0.2</version>
+	<name>weMail</name>
+	<description>project use Spring Boot</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>17</java.version>
+
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20140107</version>
+		</dependency>
+		<!-- ✅ CBOR 解析库 -->
+		<dependency>
+			<groupId>co.nstant.in</groupId>
+			<artifactId>cbor</artifactId>
+			<version>0.9</version>
+		</dependency>
+		<!-- ✅ 新增：Bouncy Castle（CBOR 解析 + 证书验证）
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.78</version>
+		</dependency> -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk18on</artifactId>
+			<version>1.78</version>
+		</dependency>
+		<!-- Source: https://mvnrepository.com/artifact/ch.veehait.devicecheck/devicecheck-appattest
+		<dependency>
+			<groupId>ch.veehait.devicecheck</groupId>
+			<artifactId>devicecheck-appattest</artifactId>
+			<version>0.9.6</version>
+			<scope>compile</scope>
+		</dependency> -->
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>
