@@ -190,8 +190,8 @@ public class AppAttestVerifier {
             System.out.println("✅ Attestation 验证通过");
 
             // 15. 存储公钥
-            AttestationKeyStore.put(keyId, publicKey);
-            System.out.println("✅ 公钥已存储: " + userPath);
+//            AttestationKeyStore.put(keyId, publicKey);
+//            System.out.println("✅ 公钥已存储: " + userPath);
 
             return publicKey;
 

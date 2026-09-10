@@ -26,7 +26,7 @@ public class ClientHandler implements Runnable {
     /** 积分功能开关（默认启用） */
     private static final boolean POINT_FEATURE_ENABLED = true;
     /** 登录奖励积分（默认100） */
-    private static final int LOGIN_BONUS_POINTS = 5;
+    private static final int LOGIN_BONUS_POINTS = 100;
     /** 消息最大长度 */
     private static final int MAX_MESSAGE_LENGTH = 2 * 1024 * 1024;
     /** 这是啥 */
@@ -212,16 +212,16 @@ public class ClientHandler implements Runnable {
                     return;
                 }
 
+                if ("15".equals(transTP)) {
+                    handleCheckCertificate(json);
+                    return;
+                }
                 if ("02".equals(transTP) || "03".equals(transTP) || "04".equals(transTP) ||
-                        "06".equals(transTP) || "09".equals(transTP) || "15".equals(transTP)) {
+                        "06".equals(transTP) || "09".equals(transTP)) {
                     if (ATTEST_ENABLED && !verifyBusinessRequest(json, message)) {
                         sendErrorResponse("App attestation verification failed");
                         return;
                     }
-                }
-                if ("15".equals(transTP)) {
-                    handleCheckCertificate(json, message);
-                    return;
                 }
                 if ("16".equals(transTP)) {
                     handleCleanSocketOnly(json);
@@ -693,7 +693,7 @@ public class ClientHandler implements Runnable {
         System.out.println("✅ 清理Socket响应已发送: userPath=" + userPath + ", removed=" + existed);
     }
 
-    private void handleCheckCertificate(JSONObject json, String rawMessage) {
+    private void handleCheckCertificate(JSONObject json) {
         System.out.println("⏱️ [15-SERVER] ========== START ==========");
         if (!ATTEST_ENABLED) {
             JSONObject response = new JSONObject();
@@ -716,32 +716,18 @@ public class ClientHandler implements Runnable {
             JSONObject attestation = json.getJSONObject("attestation");
             String keyId = attestation.getString("keyId");
 
-
             PublicKey publicKey = AttestationKeyStore.getPublicKeyByKeyId(keyId);
-
-
-            boolean exists = false;
-            if (publicKey != null) {
-
-                boolean verified = verifyAttestationOnly(attestation, rawMessage, keyId, publicKey);
-
-
-                if (verified) {
-                    exists = true;
-                    System.out.println("✅ [15-SERVER] 证书存在且验证通过: keyId=" + keyId);
-                } else {
-                    System.out.println("❌ [15-SERVER] 证书存在但验证失败: keyId=" + keyId);
-                }
+            boolean exists = (publicKey != null);
+            if (exists) {
+                System.out.println("✅ [15-SERVER] 证书存在: keyId=" + keyId);
             } else {
                 System.out.println("❌ [15-SERVER] 证书不存在: keyId=" + keyId);
             }
 
-            // 4. 返回结果
             JSONObject response = new JSONObject();
             response.put("transTP", "15");
             response.put("status", "success");
             response.put("exists", exists);
-
 
             sendResponse(response, "15", generateMessageId());
 
@@ -753,55 +739,54 @@ public class ClientHandler implements Runnable {
             sendErrorResponse("Invalid request");
         }
     }
-
-    private boolean verifyAttestationOnly(JSONObject attestation, String rawMessage, String keyId, PublicKey publicKey) {
-        long t0 = System.currentTimeMillis();
-
-        try {
-            String assertion = attestation.getString("assertion");
-            long timestamp = attestation.getLong("timestamp");
-
-
-            // 检查时间戳
-            long now = System.currentTimeMillis();
-            long diff = Math.abs(now - timestamp);
-            if (diff > 60000) {
-                System.out.println("❌ [15-verify] 时间戳过期");
-                return false;
-            }
-
-            String clientDataHashBase64 = attestation.optString("clientDataHash", "");
-
-            if (clientDataHashBase64.isEmpty()) {
-
-                JSONObject dataWithoutAttestation = new JSONObject(rawMessage);
-                dataWithoutAttestation.remove("attestation");
-                String dataString = dataWithoutAttestation.toString();
-
-
-                byte[] dataBytes = dataString.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-                clientDataHashBase64 = Base64.getEncoder().encodeToString(
-                        AppAttestVerifier.sha256(dataBytes)
-                );
-
-            }
-
-            boolean verified = AppAttestVerifier.verifyAssertion(
-                    assertion,
-                    clientDataHashBase64,
-                    keyId,
-                    publicKey
-            );
-
-
-            return verified;
-
-        } catch (Exception e) {
-            System.err.println("❌ [15-verify] 异常: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
+//    private boolean verifyAttestationOnly(JSONObject attestation, String rawMessage, String keyId, PublicKey publicKey) {
+//        long t0 = System.currentTimeMillis();
+//
+//        try {
+//            String assertion = attestation.getString("assertion");
+//            long timestamp = attestation.getLong("timestamp");
+//
+//
+//            // 检查时间戳
+//            long now = System.currentTimeMillis();
+//            long diff = Math.abs(now - timestamp);
+//            if (diff > 60000) {
+//                System.out.println("❌ [15-verify] 时间戳过期");
+//                return false;
+//            }
+//
+//            String clientDataHashBase64 = attestation.optString("clientDataHash", "");
+//
+//            if (clientDataHashBase64.isEmpty()) {
+//
+//                JSONObject dataWithoutAttestation = new JSONObject(rawMessage);
+//                dataWithoutAttestation.remove("attestation");
+//                String dataString = dataWithoutAttestation.toString();
+//
+//
+//                byte[] dataBytes = dataString.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+//                clientDataHashBase64 = Base64.getEncoder().encodeToString(
+//                        AppAttestVerifier.sha256(dataBytes)
+//                );
+//
+//            }
+//
+//            boolean verified = AppAttestVerifier.verifyAssertion(
+//                    assertion,
+//                    clientDataHashBase64,
+//                    keyId,
+//                    publicKey
+//            );
+//
+//
+//            return verified;
+//
+//        } catch (Exception e) {
+//            System.err.println("❌ [15-verify] 异常: " + e.getMessage());
+//            e.printStackTrace();
+//            return false;
+//        }
+//    }
 
     private void handleHeartbeat(JSONObject json, String messageId) throws JSONException {
         JSONObject response = new JSONObject();

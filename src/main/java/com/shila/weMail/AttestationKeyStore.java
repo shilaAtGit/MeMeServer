@@ -48,20 +48,19 @@ public class AttestationKeyStore {
 
     // ===== 核心方法 =====
 
-    /**
-     * 存储用户公钥
-     * @param userPath 用户路径（临时标识）
-     * @param keyId 设备密钥标识符
-     * @param publicKey 从 Attestation 提取的公钥
-     */
     public static void put(String keyId, PublicKey publicKey) {
+        KeyRecord existing = store.get(keyId);
+        if (existing != null) {
+            System.out.println("⚠️ 公钥已存在，跳过存储: keyId=" + keyId);
+            System.out.println("📊 当前存储数: " + store.size());
+            return;
+        }
         KeyRecord record = new KeyRecord(keyId, publicKey);
         store.put(keyId, record);
         System.out.println("✅ 公钥已存储: keyId=" + keyId);
         System.out.println("📦 存储的公钥 (Base64): " + Base64.getEncoder().encodeToString(publicKey.getEncoded()));
         System.out.println("📊 当前存储数: " + store.size());
     }
-
     /**
      * ✅ 通过 userPath 获取公钥（主查询方式）
      */
