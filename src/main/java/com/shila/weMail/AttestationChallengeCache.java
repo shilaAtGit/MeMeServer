@@ -4,20 +4,13 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * App Attest 挑战值缓存
- *
- * 生成和验证一次性挑战值（Nonce）
- * 纯内存存储，服务器重启后清空
- */
+
 public class AttestationChallengeCache {
 
     private static final ConcurrentHashMap<String, ChallengeRecord> cache = new ConcurrentHashMap<>();
     private static final SecureRandom secureRandom = new SecureRandom();
 
-    /**
-     * 挑战值记录
-     */
+
     private static class ChallengeRecord {
         final String challenge;
         final long createdAt;
@@ -32,10 +25,7 @@ public class AttestationChallengeCache {
         }
     }
 
-    /**
-     * 生成新的挑战值
-     * @return Base64 编码的 32 字节随机数
-     */
+
     public static String generateChallenge() {
         byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
@@ -45,11 +35,7 @@ public class AttestationChallengeCache {
         return challenge;
     }
 
-    /**
-     * 验证并消耗挑战值
-     * @param challenge Base64 编码的挑战值
-     * @return true 表示有效且未被使用
-     */
+
     public static boolean validateAndConsume(String challenge) {
         ChallengeRecord record = cache.remove(challenge);
         if (record == null) {
@@ -64,9 +50,6 @@ public class AttestationChallengeCache {
         return true;
     }
 
-    /**
-     * 清理过期挑战值（可定期调用）
-     */
     public static void cleanExpired() {
         long now = System.currentTimeMillis();
         cache.entrySet().removeIf(entry ->

@@ -476,13 +476,6 @@ public class ClientHandler implements Runnable {
         String toID = json.optString("toID", "").trim();
         String targetPath = json.optString("idpath", "").trim();
         String weMessage = json.getString("weMessage");
-
-        // ========== 在这里添加日志：打印收到的完整 JSON ==========
-        System.out.println("📥 [SVR] handleGenericMessage 收到完整 JSON msgId:" + messageId + " -> " + json.toString());
-        // ========================================================
-
-        System.out.println("📨 [SVR] " + transTP + " RECV msgId:" + messageId + " from:" + fromID + " -> to:" + toID + " path:" + targetPath);
-
         // 1. 立即返回 40 确认响应
         sendAckResponse(messageId);
 
@@ -556,9 +549,6 @@ public class ClientHandler implements Runnable {
             forwardMessage.put("transTP", outTransTP);
             forwardMessage.put("weMessage", weMessage);
 
-            // ========== 在这里添加日志 ==========
-            System.out.println("🔍 [SVR] 转发前 fromID 值: '" + fromID + "', 是否为空: " + (fromID == null || fromID.isEmpty()));
-            // ==================================
 
             if (fromID != null && !fromID.isEmpty()) {
                 forwardMessage.put("fromID", fromID);
@@ -574,10 +564,6 @@ public class ClientHandler implements Runnable {
                     forwardMessage.put("forwardID", forwardID);
                 }
             }
-
-            // ========== 在这里添加日志：打印完整的转发消息 ==========
-            System.out.println("📤 [SVR] 转发消息内容 msgId:" + messageId + " -> " + forwardMessage.toString());
-            // ======================================================
 
             boolean success = sendMessageToSocket(targetSocket, forwardMessage.toString(),
                     messageId, outTransTP, targetAddr);
@@ -739,54 +725,6 @@ public class ClientHandler implements Runnable {
             sendErrorResponse("Invalid request");
         }
     }
-//    private boolean verifyAttestationOnly(JSONObject attestation, String rawMessage, String keyId, PublicKey publicKey) {
-//        long t0 = System.currentTimeMillis();
-//
-//        try {
-//            String assertion = attestation.getString("assertion");
-//            long timestamp = attestation.getLong("timestamp");
-//
-//
-//            // 检查时间戳
-//            long now = System.currentTimeMillis();
-//            long diff = Math.abs(now - timestamp);
-//            if (diff > 60000) {
-//                System.out.println("❌ [15-verify] 时间戳过期");
-//                return false;
-//            }
-//
-//            String clientDataHashBase64 = attestation.optString("clientDataHash", "");
-//
-//            if (clientDataHashBase64.isEmpty()) {
-//
-//                JSONObject dataWithoutAttestation = new JSONObject(rawMessage);
-//                dataWithoutAttestation.remove("attestation");
-//                String dataString = dataWithoutAttestation.toString();
-//
-//
-//                byte[] dataBytes = dataString.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-//                clientDataHashBase64 = Base64.getEncoder().encodeToString(
-//                        AppAttestVerifier.sha256(dataBytes)
-//                );
-//
-//            }
-//
-//            boolean verified = AppAttestVerifier.verifyAssertion(
-//                    assertion,
-//                    clientDataHashBase64,
-//                    keyId,
-//                    publicKey
-//            );
-//
-//
-//            return verified;
-//
-//        } catch (Exception e) {
-//            System.err.println("❌ [15-verify] 异常: " + e.getMessage());
-//            e.printStackTrace();
-//            return false;
-//        }
-//    }
 
     private void handleHeartbeat(JSONObject json, String messageId) throws JSONException {
         JSONObject response = new JSONObject();
@@ -855,9 +793,7 @@ public class ClientHandler implements Runnable {
         sendResponse(response, "02", messageId);
     }
 
-    /**
-     * 处理查询ID路径列表操作
-     */
+
     private void handleQueryIdPaths(JSONObject json, String messageId) throws JSONException {
         String idListStr = json.getString("idList");
         String[] ids = idListStr.split("\\|");

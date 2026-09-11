@@ -21,26 +21,14 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
-/**
- * App Attest 服务端验证器
- *
- * 参考: https://developer.apple.com/documentation/devicecheck/validating-apps-that-connect-to-your-server
- */
+
 public class AppAttestVerifier {
 
     static {
         java.security.Security.addProvider(new BouncyCastleProvider());
     }
 
-    /**
-     * 验证 Attestation 对象
-     *
-     * @param attestationBase64 客户端发送的 attestation 的 Base64 编码
-     * @param challengeBase64   服务器之前发送的 challenge 的 Base64 编码
-     * @param keyId             客户端生成的 keyId
-     * @param userPath          用户路径（用于存储）
-     * @return 验证成功返回公钥，失败返回 null
-     */
+
     public static PublicKey verifyAttestation(
             String attestationBase64,
             String challengeBase64,
@@ -48,8 +36,6 @@ public class AppAttestVerifier {
             String userPath) {
 
         try {
-//            System.out.println("🔐 验证 Attestation: userPath=" + userPath + ", keyId=" + keyId);
-
             byte[] attestationBytes = Base64.getDecoder().decode(attestationBase64);
             byte[] challengeBytes = Base64.getDecoder().decode(challengeBase64);
 
@@ -125,8 +111,6 @@ public class AppAttestVerifier {
             System.out.println("🔐 x5c 证书数量: " + certBytesList.size());
             for (int i = 0; i < certBytesList.size(); i++) {
                 byte[] certData = certBytesList.get(i);
-//                System.out.println("🔐 证书 #" + i + " 长度: " + certData.length);
-//                System.out.println("🔐 证书 #" + i + " 前8字节 (hex): " + bytesToHex(Arrays.copyOf(certData, Math.min(8, certData.length))));
             }
             X509Certificate[] certChain = verifyCertificateChain(certBytesList);
             if (certChain == null || certChain.length == 0) {
@@ -134,7 +118,6 @@ public class AppAttestVerifier {
                 return null;
             }
             X509Certificate leafCert = certChain[0];
-//            System.out.println("✅ 证书验证通过: " + leafCert.getSubjectX500Principal().getName());
 
             // 8. 验证证书 CN 是否匹配 keyId
             String cn = extractCN(leafCert);
@@ -143,14 +126,12 @@ public class AppAttestVerifier {
                 System.err.println("❌ keyId 不匹配");
                 return null;
             }
-//            System.out.println("✅ keyId 匹配");
 
             // 9. 验证 Nonce
             if (!verifyNonce(map, challengeBytes, leafCert)) {
                 System.err.println("❌ Nonce 验证失败");
                 return null;
             }
-//            System.out.println("✅ Nonce 验证通过");
 
             // 10. 验证 RP ID (App ID)
             byte[] appIdHash = sha256(AttestationConstants.getAppId().getBytes());
@@ -159,7 +140,6 @@ public class AppAttestVerifier {
                 System.err.println("❌ RP ID 不匹配");
                 return null;
             }
-//            System.out.println("✅ RP ID 验证通过");
 
             // 11. 验证 counter = 0（首次 attestation）
             int counter = getCounter(authData);
@@ -167,7 +147,6 @@ public class AppAttestVerifier {
                 System.err.println("❌ Counter 不为 0: " + counter);
                 return null;
             }
-//            System.out.println("✅ Counter 验证通过: 0");
 
             // 12. 验证 AAGUID
             String aaguid = extractAAGUID(authData);
@@ -189,10 +168,6 @@ public class AppAttestVerifier {
             PublicKey publicKey = leafCert.getPublicKey();
             System.out.println("✅ Attestation 验证通过");
 
-            // 15. 存储公钥
-//            AttestationKeyStore.put(keyId, publicKey);
-//            System.out.println("✅ 公钥已存储: " + userPath);
-
             return publicKey;
 
         } catch (Exception e) {
@@ -202,15 +177,7 @@ public class AppAttestVerifier {
         }
     }
 
-    /**
-     * 验证 Assertion 对象
-     *
-     * @param assertionBase64          客户端发送的 assertion 的 Base64 编码
-     * @param clientDataHashBase64     客户端数据的 SHA-256 哈希的 Base64 编码
-     * @param identifier               userPath 或 keyId
-     * @param publicKey                之前存储的公钥
-     * @return 验证成功返回 true
-     */
+
     public static boolean verifyAssertion(
             String assertionBase64,
             String clientDataHashBase64,
@@ -218,34 +185,19 @@ public class AppAttestVerifier {
             PublicKey publicKey) {
 
         long t0 = System.currentTimeMillis();
-//        System.out.println("🔐 [verifyAssertion] ========== START ==========");
-//        System.out.println("🔑 [verifyAssertion] identifier: " + identifier);
-//        System.out.println("🔐 [verifyAssertion] assertion 长度: " + assertionBase64.length());
-//        System.out.println("🔐 [verifyAssertion] clientDataHash 长度: " + clientDataHashBase64.length());
-//        System.out.println("🔐 [verifyAssertion] publicKey 算法: " + publicKey.getAlgorithm());
-
         try {
             byte[] assertionBytes = Base64.getDecoder().decode(assertionBase64);
             byte[] clientDataHash = Base64.getDecoder().decode(clientDataHashBase64);
 
             long t1 = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] Base64 解码完成: " + (t1 - t0) + "ms");
-//            System.out.println("🔐 [verifyAssertion] assertionBytes 长度: " + assertionBytes.length);
-//            System.out.println("🔐 [verifyAssertion] clientDataHash 长度: " + clientDataHash.length);
 
             // 1. 解析 CBOR
-//            System.out.println("🔐 [verifyAssertion] 开始解析 CBOR...");
-            long cborStart = System.currentTimeMillis();
 
             List<DataItem> dataItems = CborDecoder.decode(assertionBytes);
             if (dataItems == null || dataItems.isEmpty()) {
-//                System.err.println("❌ [verifyAssertion] CBOR 数据为空");
                 return false;
             }
 
-            long cborEnd = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] CBOR 解析耗时: " + (cborEnd - cborStart) + "ms");
-//            System.out.println("📦 [verifyAssertion] CBOR 数据项数: " + dataItems.size());
 
             DataItem firstItem = dataItems.get(0);
             if (!(firstItem instanceof Map)) {
@@ -263,8 +215,6 @@ public class AppAttestVerifier {
             byte[] signature = ((ByteString) signatureItem).getBytes();
 
             long t2 = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] 提取 signature 完成: " + (t2 - t1) + "ms");
-//            System.out.println("🔐 [verifyAssertion] signature 长度: " + signature.length);
 
             // 3. 提取 authenticatorData
             DataItem authDataItem = map.get(new UnicodeString("authenticatorData"));
@@ -275,19 +225,14 @@ public class AppAttestVerifier {
             byte[] authenticatorData = ((ByteString) authDataItem).getBytes();
 
             long t3 = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] 提取 authenticatorData 完成: " + (t3 - t2) + "ms");
-//            System.out.println("🔐 [verifyAssertion] authenticatorData 长度: " + authenticatorData.length);
-//            System.out.println("🔐 [verifyAssertion] authenticatorData 前20字节 (hex): " + bytesToHex(Arrays.copyOf(authenticatorData, Math.min(20, authenticatorData.length))));
 
             // 4. 提取 counter
             int counter = getCounter(authenticatorData);
-//            System.out.println("🔐 [verifyAssertion] counter: " + counter);
 
             // 5. 验证 RP ID
             byte[] appIdHash = sha256(AttestationConstants.getAppId().getBytes());
             byte[] rpIdHashFromAuthData = Arrays.copyOfRange(authenticatorData, 0, 32);
             boolean rpIdMatch = Arrays.equals(appIdHash, rpIdHashFromAuthData);
-//            System.out.println("🔐 [verifyAssertion] RP ID 匹配: " + rpIdMatch);
             if (!rpIdMatch) {
                 System.err.println("❌ [verifyAssertion] RP ID 不匹配");
                 return false;
@@ -295,10 +240,7 @@ public class AppAttestVerifier {
 
             // 6. 验证签名
             byte[] nonce = sha256(concat(authenticatorData, clientDataHash));
-//            System.out.println("🔐 [verifyAssertion] nonce 长度: " + nonce.length);
 
-            long verifyStart = System.currentTimeMillis();
-//            System.out.println("🔐 [verifyAssertion] 开始 ECDSA 签名验证...");
 
             Signature sig = Signature.getInstance("SHA256withECDSA", "BC");
             sig.initVerify(publicKey);
@@ -306,9 +248,6 @@ public class AppAttestVerifier {
 
             boolean result = sig.verify(signature);
 
-            long verifyEnd = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] ECDSA 签名验证耗时: " + (verifyEnd - verifyStart) + "ms");
-//            System.out.println("🔐 [verifyAssertion] 签名验证结果: " + result);
 
             if (!result) {
                 System.err.println("❌ [verifyAssertion] 签名验证失败");
@@ -318,8 +257,6 @@ public class AppAttestVerifier {
             }
 
             // 7. 验证 counter
-//            System.out.println("🔐 [verifyAssertion] 开始验证 counter...");
-            long counterStart = System.currentTimeMillis();
 
             AttestationKeyStore.KeyRecord record = AttestationKeyStore.getByKeyId(identifier);
             if (record != null) {
@@ -327,16 +264,13 @@ public class AppAttestVerifier {
                     System.err.println("❌ [verifyAssertion] Counter 验证失败");
                     return false;
                 }
-//                System.out.println("✅ [verifyAssertion] Counter 更新成功: " + counter);
             } else {
                 System.out.println("⚠️ [verifyAssertion] 未找到记录，跳过 counter 验证");
             }
 
             long counterEnd = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] Counter 验证耗时: " + (counterEnd - counterStart) + "ms");
 
             long tEnd = System.currentTimeMillis();
-//            System.out.println("⏱️ [verifyAssertion] ========== END 总耗时: " + (tEnd - t0) + "ms ==========");
             System.out.println("✅ [verifyAssertion] 验证通过!");
 
             return true;
@@ -350,7 +284,6 @@ public class AppAttestVerifier {
         }
     }
 
-    // ==================== 辅助方法 ====================
 
     public static byte[] sha256(byte[] data) {
         try {
@@ -528,7 +461,6 @@ public class AppAttestVerifier {
                 ByteArrayInputStream bais = new ByteArrayInputStream(certData);
                 X509Certificate cert = (X509Certificate) cf.generateCertificate(bais);
                 certs.add(cert);
-//                System.out.println("✅ 证书解析成功: " + cert.getSubjectX500Principal().getName());
             }
 
             if (certs.isEmpty()) {
@@ -540,7 +472,6 @@ public class AppAttestVerifier {
             X509Certificate rootCert = (X509Certificate) cf.generateCertificate(
                     new ByteArrayInputStream(rootCertBytes)
             );
-//            System.out.println("✅ 根证书解析成功: " + rootCert.getSubjectX500Principal().getName());
 
             // ✅ 验证完整证书链
             // 证书链顺序: [叶子证书, 中间证书, ...]
@@ -554,18 +485,12 @@ public class AppAttestVerifier {
             for (int i = 0; i < certs.size() - 1; i++) {
                 X509Certificate cert = certs.get(i);
                 X509Certificate issuer = certs.get(i + 1);
-//                System.out.println("🔐 验证 " + cert.getSubjectX500Principal().getName());
-//                System.out.println("   ← 由 " + issuer.getSubjectX500Principal().getName() + " 签名");
                 cert.verify(issuer.getPublicKey());
             }
 
             // 3. 验证最后一个证书由根证书签名
             X509Certificate lastCert = certs.get(certs.size() - 1);
-//            System.out.println("🔐 验证 " + lastCert.getSubjectX500Principal().getName());
-//            System.out.println("   ← 由 " + rootCert.getSubjectX500Principal().getName() + " 签名");
             lastCert.verify(rootCert.getPublicKey());
-
-//            System.out.println("✅ 证书链验证通过");
             return certs.toArray(new X509Certificate[0]);
 
         } catch (Exception e) {

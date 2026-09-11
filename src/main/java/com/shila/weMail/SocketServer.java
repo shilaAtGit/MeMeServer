@@ -59,7 +59,6 @@ public class SocketServer {
 				} catch (IOException e) {
 					failCount++;
 					System.err.println("[" + new Date() + "] Accept failed: " + e.getMessage());
-//					Thread.sleep(1000);
 				}
 			}
 		} catch (Exception e) {

@@ -25,5 +25,4 @@ public enum OperationType {
         return UNKNOWN;
     }
 
-    // getters...
 }
