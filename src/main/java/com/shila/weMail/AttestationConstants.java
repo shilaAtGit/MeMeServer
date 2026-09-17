@@ -17,7 +17,7 @@ public class AttestationConstants {
                     "53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijV" +
                     "oyFraWVIyd/dganmrduC1bmTBGwD";
 
-    public static final String TEAM_ID = "";
+    public static final String TEAM_ID = "putinYourTeamID";
 
     public static final String BUNDLE_ID = "shila.wePost";
 
