@@ -17,9 +17,9 @@ public class AttestationConstants {
                     "53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijV" +
                     "oyFraWVIyd/dganmrduC1bmTBGwD";
 
-    public static final String TEAM_ID = "putinYourTeamID";
+    public static final String TEAM_ID = "J8JP65DVL4";
 
-    public static final String BUNDLE_ID = "shila.wePost";
+    public static final String BUNDLE_ID = "com.shila.MetMessage";
 
     public static final long CHALLENGE_TIMEOUT_MS = 5 * 60 * 1000; // 5 分钟
 

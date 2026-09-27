@@ -26,7 +26,7 @@ public class AttestationKeyStore {
         public boolean verifyAndIncrementCounter(int newCounter) {
             int current = counter.get();
             if (newCounter <= current) {
-                System.out.println("❌ Counter 无效: current=" + current + ", new=" + newCounter);
+                Log.d("❌ Counter 无效: current=" + current + ", new=" + newCounter);
                 return false;
             }
             counter.set(newCounter);
@@ -42,15 +42,15 @@ public class AttestationKeyStore {
     public static void put(String keyId, PublicKey publicKey) {
         KeyRecord existing = store.get(keyId);
         if (existing != null) {
-            System.out.println("⚠️ 公钥已存在，跳过存储: keyId=" + keyId);
-            System.out.println("📊 当前存储数: " + store.size());
+            Log.d("⚠️ 公钥已存在，跳过存储: keyId=" + keyId);
+            Log.d("📊 当前存储数: " + store.size());
             return;
         }
         KeyRecord record = new KeyRecord(keyId, publicKey);
         store.put(keyId, record);
-        System.out.println("✅ 公钥已存储: keyId=" + keyId);
-        System.out.println("📦 存储的公钥 (Base64): " + Base64.getEncoder().encodeToString(publicKey.getEncoded()));
-        System.out.println("📊 当前存储数: " + store.size());
+        Log.d("✅ 公钥已存储: keyId=" + keyId);
+        Log.d("📦 存储的公钥 (Base64): " + Base64.getEncoder().encodeToString(publicKey.getEncoded()));
+        Log.d("📊 当前存储数: " + store.size());
     }
 
     public static PublicKey getPublicKeyByUserPath(String userPath) {
@@ -81,15 +81,15 @@ public class AttestationKeyStore {
 
     public static void removeByUserPath(String userPath) {
         // 注意：此方法保留用于登出时清理，但实际不删除证书
-        System.out.println("⚠️ removeByUserPath 已禁用（登出不清理证书），userPath=" + userPath);
-        System.out.println("📊 当前存储数: " + store.size());
+        Log.d("⚠️ removeByUserPath 已禁用（登出不清理证书），userPath=" + userPath);
+        Log.d("📊 当前存储数: " + store.size());
     }
 
 
     public static boolean verifyAndIncrementCounterByUserPath(String userPath, int newCounter) {
         KeyRecord record = store.get(userPath);
         if (record == null) {
-            System.out.println("❌ 未找到记录: userPath=" + userPath);
+            Log.d("❌ 未找到记录: userPath=" + userPath);
             return false;
         }
         return record.verifyAndIncrementCounter(newCounter);
@@ -101,6 +101,6 @@ public class AttestationKeyStore {
 
     public static void clear() {
         store.clear();
-        System.out.println("🗑️ 所有密钥已清空");
+        Log.d("🗑️ 所有密钥已清空");
     }
 }

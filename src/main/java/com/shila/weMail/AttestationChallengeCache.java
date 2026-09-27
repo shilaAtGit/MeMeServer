@@ -31,7 +31,7 @@ public class AttestationChallengeCache {
         secureRandom.nextBytes(bytes);
         String challenge = Base64.getEncoder().encodeToString(bytes);
         cache.put(challenge, new ChallengeRecord(challenge));
-        System.out.println("📝 Challenge 生成: " + challenge.substring(0, 16) + "...");
+        Log.d("📝 Challenge 生成: " + challenge.substring(0, 16) + "...");
         return challenge;
     }
 
@@ -39,14 +39,14 @@ public class AttestationChallengeCache {
     public static boolean validateAndConsume(String challenge) {
         ChallengeRecord record = cache.remove(challenge);
         if (record == null) {
-            System.out.println("❌ Challenge 不存在或已使用: " + challenge.substring(0, 16) + "...");
+            Log.d("❌ Challenge 不存在或已使用: " + challenge.substring(0, 16) + "...");
             return false;
         }
         if (!record.isValid()) {
-            System.out.println("❌ Challenge 已过期: " + challenge.substring(0, 16) + "...");
+            Log.d("❌ Challenge 已过期: " + challenge.substring(0, 16) + "...");
             return false;
         }
-        System.out.println("✅ Challenge 验证通过: " + challenge.substring(0, 16) + "...");
+        Log.d("✅ Challenge 验证通过: " + challenge.substring(0, 16) + "...");
         return true;
     }
 

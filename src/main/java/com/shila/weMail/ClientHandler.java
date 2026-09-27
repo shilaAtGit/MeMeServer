@@ -21,7 +21,7 @@ import org.json.*;
  * */
 public class ClientHandler implements Runnable {
     /** Attest 功能开关 */
-    private static final boolean ATTEST_ENABLED = true;
+    private static final boolean ATTEST_ENABLED = false;
     // ===== 积分功能配置 =====
     /** 积分功能开关（默认启用） */
     private static final boolean POINT_FEATURE_ENABLED = true;
@@ -73,7 +73,7 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         String clientAddr = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
-        System.out.println("[DIAG] RUN_START client=" + clientAddr);
+        Log.d("[DIAG] RUN_START client=" + clientAddr);
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(clientSocket.getInputStream()));
              PrintWriter writer = new PrintWriter(
@@ -163,15 +163,15 @@ public class ClientHandler implements Runnable {
                     }
 
                     if (!isSocketValid(clientSocket)) {
-                        System.out.println("[DIAG] RUN_EXIT socket_invalid client=" + clientAddr + " path=" + findPathBySocket(clientSocket));
+                        Log.d("[DIAG] RUN_EXIT socket_invalid client=" + clientAddr + " path=" + findPathBySocket(clientSocket));
                         break;
                     }
                 } catch (InterruptedException e) {
-                    System.out.println("[DIAG] RUN_EXIT interrupted client=" + clientAddr);
+                    Log.d("[DIAG] RUN_EXIT interrupted client=" + clientAddr);
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    System.out.println("[DIAG] RUN_EXIT exception client=" + clientAddr + " msg=" + e.getMessage());
+                    Log.d("[DIAG] RUN_EXIT exception client=" + clientAddr + " msg=" + e.getMessage());
                     break;
                 }
             }
@@ -183,9 +183,9 @@ public class ClientHandler implements Runnable {
                 Thread.currentThread().interrupt();
             }
         } catch (Exception e) {
-            System.out.println("[DIAG] RUN_EXIT outer_exception client=" + clientAddr + " msg=" + e.getMessage());
+            Log.d("[DIAG] RUN_EXIT outer_exception client=" + clientAddr + " msg=" + e.getMessage());
         } finally {
-            System.out.println("[DIAG] RUN_FINALLY client=" + clientAddr + " calling cleanup");
+            Log.d("[DIAG] RUN_FINALLY client=" + clientAddr + " calling cleanup");
             cleanup();
         }
     }
@@ -240,7 +240,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleChallenge(JSONObject json) throws JSONException {
-        System.out.println("📝 收到挑战请求");
+        Log.d("📝 收到挑战请求");
 
         if (!ATTEST_ENABLED) {
             JSONObject response = new JSONObject();
@@ -259,7 +259,7 @@ public class ClientHandler implements Runnable {
         response.put("status", "success");
 
         sendResponse(response, "20", generateMessageId());
-        System.out.println("📤 挑战响应已发送: " + challenge.substring(0, 16) + "...");
+        Log.d("📤 挑战响应已发送: " + challenge.substring(0, 16) + "...");
     }
 
     private void handleAttestation(JSONObject json) throws JSONException {
@@ -284,11 +284,11 @@ public class ClientHandler implements Runnable {
             response.put("message", "Attestation disabled");
             response.put("userPath", userPath);
             sendResponse(response, "21", generateMessageId());
-            System.out.println("⚠️ Attest 已禁用，跳过验证: userPath=" + userPath + ", keyId=" + keyId);
+            Log.d("⚠️ Attest 已禁用，跳过验证: userPath=" + userPath + ", keyId=" + keyId);
             return;
         }
 
-        System.out.println("🔐 收到 Attestation: userPath=" + userPath + ", keyId=" + keyId);
+        Log.d("🔐 收到 Attestation: userPath=" + userPath + ", keyId=" + keyId);
 
         if (!AttestationChallengeCache.validateAndConsume(challenge)) {
             JSONObject response = new JSONObject();
@@ -320,7 +320,7 @@ public class ClientHandler implements Runnable {
         response.put("message", "Attestation completed");
         sendResponse(response, "21", generateMessageId());
 
-        System.out.println("✅ Attestation 完成: userPath=" + userPath + ", keyId=" + keyId);
+        Log.d("✅ Attestation 完成: userPath=" + userPath + ", keyId=" + keyId);
     }
 
     private boolean verifyBusinessRequest(JSONObject json, String rawMessage) {
@@ -328,7 +328,7 @@ public class ClientHandler implements Runnable {
             return true;
         }
         if (!json.has("attestation")) {
-            System.out.println("⚠️ 请求缺少 attestation 字段，拒绝");
+            Log.d("⚠️ 请求缺少 attestation 字段，拒绝");
             return false;
         }
 
@@ -339,22 +339,22 @@ public class ClientHandler implements Runnable {
 
         PublicKey publicKey = AttestationKeyStore.getPublicKeyByKeyId(keyId);
         if (publicKey == null) {
-            System.out.println("❌ 未找到公钥: keyId=" + keyId);
+            Log.d("❌ 未找到公钥: keyId=" + keyId);
             return false;
         }
 
-        System.out.println("🔐 验证 Assertion:  keyId=" + keyId);
-        System.out.println("🔐 服务器使用的公钥 (Base64): " + Base64.getEncoder().encodeToString(publicKey.getEncoded()));
+        Log.d("🔐 验证 Assertion:  keyId=" + keyId);
+        Log.d("🔐 服务器使用的公钥 (Base64): " + Base64.getEncoder().encodeToString(publicKey.getEncoded()));
         // 4. 检查时间戳（防重放）
         long now = System.currentTimeMillis();
         if (Math.abs(now - timestamp) > 60000) {
-            System.out.println("❌ 请求时间戳过期: " + timestamp);
+            Log.d("❌ 请求时间戳过期: " + timestamp);
             return false;
         }
         String clientDataHashBase64 = attestation.optString("clientDataHash", "");
-        System.out.println("🔐 收到的 clientDataHash (Base64): " + clientDataHashBase64);
+        Log.d("🔐 收到的 clientDataHash (Base64): " + clientDataHashBase64);
         if (clientDataHashBase64.isEmpty()) {
-            System.out.println("⚠️ 请求缺少 clientDataHash，降级使用服务器计算");
+            Log.d("⚠️ 请求缺少 clientDataHash，降级使用服务器计算");
             JSONObject dataWithoutAttestation = new JSONObject(rawMessage);
             dataWithoutAttestation.remove("attestation");
             String dataString = dataWithoutAttestation.toString();
@@ -372,9 +372,9 @@ public class ClientHandler implements Runnable {
         );
 
         if (verified) {
-            System.out.println("✅ Assertion 验证通过:  keyId=" + keyId);
+            Log.d("✅ Assertion 验证通过:  keyId=" + keyId);
         } else {
-            System.out.println("❌ Assertion 验证失败:  keyId=" + keyId);
+            Log.d("❌ Assertion 验证失败:  keyId=" + keyId);
         }
 
         return verified;
@@ -507,9 +507,9 @@ public class ClientHandler implements Runnable {
                 lastFlushTime = now;
             }
 
-            System.out.println("📤 [SVR] 40 ACK sent msgId:" + messageId);
+            Log.d("📤 [SVR] 40 ACK sent msgId:" + messageId);
         } catch (Exception e) {
-            System.out.println("❌ [SVR] sendAckResponse failed msgId:" + messageId + " " + e.getMessage());
+            Log.d("❌ [SVR] sendAckResponse failed msgId:" + messageId + " " + e.getMessage());
         }
     }
 
@@ -520,17 +520,17 @@ public class ClientHandler implements Runnable {
                                           String toID, String fromID,
                                           String messageId, String transTP,
                                           JSONObject originalJson) {
-        System.out.println("📤 [SVR] " + transTP + " forward start msgId:" + messageId + " targetPath:" + targetPath + " poolContains:" + socketPool.containsKey(targetPath));
+        Log.d("📤 [SVR] " + transTP + " forward start msgId:" + messageId + " targetPath:" + targetPath + " poolContains:" + socketPool.containsKey(targetPath));
 
         // 目标不在线，直接丢弃（由客户端处理离线逻辑）
         if (targetPath == null || targetPath.isEmpty() || !socketPool.containsKey(targetPath)) {
-            System.out.println("❌ [SVR] " + transTP + " target offline, DISCARDED msgId:" + messageId + " path:" + targetPath);
+            Log.d("❌ [SVR] " + transTP + " target offline, DISCARDED msgId:" + messageId + " path:" + targetPath);
             return;
         }
 
         SSLSocket targetSocket = socketPool.get(targetPath);
         if (targetSocket == null || !isSocketValid(targetSocket)) {
-            System.out.println("❌ [SVR] " + transTP + " target socket invalid, DISCARDED msgId:" + messageId);
+            Log.d("❌ [SVR] " + transTP + " target socket invalid, DISCARDED msgId:" + messageId);
             return;
         }
 
@@ -544,7 +544,7 @@ public class ClientHandler implements Runnable {
             if ("04".equals(transTP)) {
                 outTransTP = "08";
             }
-            System.out.println("🔄 [SVR] " + transTP + " -> " + outTransTP + " msgId:" + messageId + " (04改08)");
+            Log.d("🔄 [SVR] " + transTP + " -> " + outTransTP + " msgId:" + messageId + " (04改08)");
 
             forwardMessage.put("transTP", outTransTP);
             forwardMessage.put("weMessage", weMessage);
@@ -552,9 +552,9 @@ public class ClientHandler implements Runnable {
 
             if (fromID != null && !fromID.isEmpty()) {
                 forwardMessage.put("fromID", fromID);
-                System.out.println("✅ [SVR] 已添加 fromID 到转发消息: " + fromID);
+                Log.d("✅ [SVR] 已添加 fromID 到转发消息: " + fromID);
             } else {
-                System.out.println("⚠️ [SVR] fromID 为空，跳过添加");
+                Log.d("⚠️ [SVR] fromID 为空，跳过添加");
             }
 
             // 保留 forwardID 字段（从 originalJson 获取）
@@ -569,12 +569,12 @@ public class ClientHandler implements Runnable {
                     messageId, outTransTP, targetAddr);
 
             if (success) {
-                System.out.println("✅ [SVR] " + transTP + " forward SUCCESS msgId:" + messageId + " to " + targetAddr + " (sent as " + outTransTP + ")");
+                Log.d("✅ [SVR] " + transTP + " forward SUCCESS msgId:" + messageId + " to " + targetAddr + " (sent as " + outTransTP + ")");
             } else {
-                System.out.println("❌ [SVR] " + transTP + " forward FAILED msgId:" + messageId);
+                Log.d("❌ [SVR] " + transTP + " forward FAILED msgId:" + messageId);
             }
         } catch (Exception e) {
-            System.out.println("❌ [SVR] " + transTP + " forward EXCEPTION msgId:" + messageId + " " + e.getMessage());
+            Log.d("❌ [SVR] " + transTP + " forward EXCEPTION msgId:" + messageId + " " + e.getMessage());
         }
     }
 
@@ -582,7 +582,7 @@ public class ClientHandler implements Runnable {
     private void handleOnlineStatusQuery(JSONObject json, String messageId) throws JSONException {
         String contactPath = json.getString("contactPath");
         boolean isOnline = socketPool.containsKey(contactPath);
-        System.out.println("📡 [SVR] 07 QUERY msgId:" + messageId + " path:" + contactPath + " isOnline:" + isOnline);
+        Log.d("📡 [SVR] 07 QUERY msgId:" + messageId + " path:" + contactPath + " isOnline:" + isOnline);
         JSONObject response = new JSONObject();
         response.put("transTP", "07");
         response.put("status", "success");
@@ -611,26 +611,26 @@ public class ClientHandler implements Runnable {
             if (clientSocket != null && !clientSocket.isClosed()) {
                 try {
                     clientSocket.close();
-                    System.out.println("[LOGOUT] " + messageId + " socket已关闭");
+                    Log.d("[LOGOUT] " + messageId + " socket已关闭");
                 } catch (IOException e) {
-                    System.err.println("[LOGOUT] " + messageId + " 关闭socket异常: " + e.getMessage());
+                    Log.e("[LOGOUT] " + messageId + " 关闭socket异常: " + e.getMessage());
                 }
             }
         }
 
-        System.out.println("LOGOUT| " + messageId + " | path:" + userPath + " | existed:" + existed);
+        Log.d("LOGOUT| " + messageId + " | path:" + userPath + " | existed:" + existed);
 
 
-        System.out.println("[LOGOUT] " + messageId + " 清理完成 | 剩余池大小=" + socketPool.size());
+        Log.d("[LOGOUT] " + messageId + " 清理完成 | 剩余池大小=" + socketPool.size());
         if (!socketPool.isEmpty()) {
-            System.out.println("[LOGOUT] " + messageId + " 当前socketPool内容:");
+            Log.d("[LOGOUT] " + messageId + " 当前socketPool内容:");
             for (Map.Entry<String, SSLSocket> entry : socketPool.entrySet()) {
                 SSLSocket s = entry.getValue();
                 String addr = s != null ? s.getInetAddress().getHostAddress() + ":" + s.getPort() : "closed";
-                System.out.println("  - userPath=" + entry.getKey() + " | client=" + addr);
+                Log.d("  - userPath=" + entry.getKey() + " | client=" + addr);
             }
         } else {
-            System.out.println("[LOGOUT] " + messageId + " socketPool为空");
+            Log.d("[LOGOUT] " + messageId + " socketPool为空");
         }
 
 
@@ -639,33 +639,33 @@ public class ClientHandler implements Runnable {
     private void handleCleanSocketOnly(JSONObject json) throws JSONException {
         String userPath = json.getString("userPath");
 
-        System.out.println("🧹 收到清理Socket请求: userPath=" + userPath);
-        System.out.println("🧹 [16-BEFORE] socketPool 大小: " + socketPool.size());
+        Log.d("🧹 收到清理Socket请求: userPath=" + userPath);
+        Log.d("🧹 [16-BEFORE] socketPool 大小: " + socketPool.size());
         for (Map.Entry<String, SSLSocket> entry : socketPool.entrySet()) {
             SSLSocket s = entry.getValue();
             String addr = s != null ? s.getInetAddress().getHostAddress() + ":" + s.getPort() : "closed";
-            System.out.println("🧹 [16-BEFORE]   " + entry.getKey() + " -> " + addr);
+            Log.d("🧹 [16-BEFORE]   " + entry.getKey() + " -> " + addr);
         }
         boolean existed = socketPool.containsKey(userPath);
-        System.out.println("🧹 [16] 查找 userPath: " + userPath + ", 存在: " + existed);
+        Log.d("🧹 [16] 查找 userPath: " + userPath + ", 存在: " + existed);
         if (existed) {
             SSLSocket socket = socketPool.remove(userPath);
             if (socket != null && !socket.isClosed()) {
                 try {
                     socket.close();
-                    System.out.println("🧹 [16] Socket已关闭: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
+                    Log.d("🧹 [16] Socket已关闭: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
                 } catch (IOException e) {
-                    System.err.println("❌ 关闭Socket异常: " + e.getMessage());
+                    Log.e("❌ 关闭Socket异常: " + e.getMessage());
                 }
             }
-            System.out.println("🧹 [16-AFTER] socketPool 大小: " + socketPool.size());
+            Log.d("🧹 [16-AFTER] socketPool 大小: " + socketPool.size());
             for (Map.Entry<String, SSLSocket> entry : socketPool.entrySet()) {
                 SSLSocket s = entry.getValue();
                 String addr = s != null ? s.getInetAddress().getHostAddress() + ":" + s.getPort() : "closed";
-                System.out.println("🧹 [16-AFTER]   " + entry.getKey() + " -> " + addr);
+                Log.d("🧹 [16-AFTER]   " + entry.getKey() + " -> " + addr);
             }
         } else {
-            System.out.println("⚠️ Socket不存在: userPath=" + userPath);
+            Log.d("⚠️ Socket不存在: userPath=" + userPath);
         }
 
         JSONObject response = new JSONObject();
@@ -676,25 +676,25 @@ public class ClientHandler implements Runnable {
         response.put("removed", existed);
 
         sendResponse(response, "16", generateMessageId());
-        System.out.println("✅ 清理Socket响应已发送: userPath=" + userPath + ", removed=" + existed);
+        Log.d("✅ 清理Socket响应已发送: userPath=" + userPath + ", removed=" + existed);
     }
 
     private void handleCheckCertificate(JSONObject json) {
-        System.out.println("⏱️ [15-SERVER] ========== START ==========");
+        Log.d("⏱️ [15-SERVER] ========== START ==========");
         if (!ATTEST_ENABLED) {
             JSONObject response = new JSONObject();
             response.put("transTP", "15");
             response.put("status", "success");
             response.put("exists", true);
             sendResponse(response, "15", generateMessageId());
-            System.out.println("⚠️ Attest 已禁用，返回 exists=true");
+            Log.d("⚠️ Attest 已禁用，返回 exists=true");
             return;
         }
 
         try {
-            System.out.println("🔍 [15-SERVER] 检查 attestation 字段...");
+            Log.d("🔍 [15-SERVER] 检查 attestation 字段...");
             if (!json.has("attestation")) {
-                System.out.println("❌ [15-SERVER] 缺少 attestation 字段，拒绝");
+                Log.d("❌ [15-SERVER] 缺少 attestation 字段，拒绝");
                 sendErrorResponse("App attestation verification failed");
                 return;
             }
@@ -705,9 +705,9 @@ public class ClientHandler implements Runnable {
             PublicKey publicKey = AttestationKeyStore.getPublicKeyByKeyId(keyId);
             boolean exists = (publicKey != null);
             if (exists) {
-                System.out.println("✅ [15-SERVER] 证书存在: keyId=" + keyId);
+                Log.d("✅ [15-SERVER] 证书存在: keyId=" + keyId);
             } else {
-                System.out.println("❌ [15-SERVER] 证书不存在: keyId=" + keyId);
+                Log.d("❌ [15-SERVER] 证书不存在: keyId=" + keyId);
             }
 
             JSONObject response = new JSONObject();
@@ -717,10 +717,10 @@ public class ClientHandler implements Runnable {
 
             sendResponse(response, "15", generateMessageId());
 
-            System.out.println("✅ [15-SERVER] 查询结果: keyId=" + keyId + ", exists=" + exists);
+            Log.d("✅ [15-SERVER] 查询结果: keyId=" + keyId + ", exists=" + exists);
 
         } catch (JSONException e) {
-            System.err.println("❌ [15-SERVER] 处理异常: " + e.getMessage());
+            Log.e("❌ [15-SERVER] 处理异常: " + e.getMessage());
             e.printStackTrace();
             sendErrorResponse("Invalid request");
         }
@@ -763,25 +763,25 @@ public class ClientHandler implements Runnable {
         while (iterator.hasNext()) {
             Map.Entry<String, SSLSocket> entry = iterator.next();
             if (entry.getValue().equals(clientSocket)) {
-                System.out.println("📝 [02] 移除旧映射: " + entry.getKey() + " (同一socket)");
+                Log.d("📝 [02] 移除旧映射: " + entry.getKey() + " (同一socket)");
                 iterator.remove();
             }
         }
 
         SSLSocket previousSocket = socketPool.put(userPath, clientSocket);
         if (previousSocket != null) {
-            System.out.println("📝 [02] 替换旧记录: " + userPath + " (旧socket: " + previousSocket.getInetAddress().getHostAddress() + ":" + previousSocket.getPort() + ")");
+            Log.d("📝 [02] 替换旧记录: " + userPath + " (旧socket: " + previousSocket.getInetAddress().getHostAddress() + ":" + previousSocket.getPort() + ")");
         }
 
-        System.out.println("📝 [02-AFTER] socketPool 大小: " + socketPool.size());
+        Log.d("📝 [02-AFTER] socketPool 大小: " + socketPool.size());
         for (Map.Entry<String, SSLSocket> entry : socketPool.entrySet()) {
             SSLSocket s = entry.getValue();
             String addr = s != null ? s.getInetAddress().getHostAddress() + ":" + s.getPort() : "closed";
-            System.out.println("📝 [02-AFTER]   " + entry.getKey() + " -> " + addr);
+            Log.d("📝 [02-AFTER]   " + entry.getKey() + " -> " + addr);
         }
-        System.out.println("REG| after | poolSize:" + socketPool.size() + " keys:" + socketPool.keySet());
+        Log.d("REG| after | poolSize:" + socketPool.size() + " keys:" + socketPool.keySet());
         // 打印注册结果
-        System.out.println("[" + new Date() + "] [" + messageId + "] REGISTER userPath=" + userPath +
+        Log.d("[" + new Date() + "] [" + messageId + "] REGISTER userPath=" + userPath +
                 " poolSize=" + socketPool.size() + " keys=" + String.join(",", socketPool.keySet()));
 
         JSONObject response = new JSONObject();
@@ -847,7 +847,7 @@ public class ClientHandler implements Runnable {
 
         String messageId = generateMessageId();
         sendResponse(response, "ERROR", messageId);
-        System.err.println("[" + new Date() + "] [" + messageId + "] Error: " + errorMessage);
+        Log.e("[" + new Date() + "] [" + messageId + "] Error: " + errorMessage);
     }
 
 
@@ -886,7 +886,7 @@ public class ClientHandler implements Runnable {
                 }
 
                 if ("02".equals(operation) || "03".equals(operation) || "06".equals(operation) || "16".equals(operation)) {
-                    System.out.println("📤 [SVR] " + operation + " response sent msgId:" + messageId);
+                    Log.d("📤 [SVR] " + operation + " response sent msgId:" + messageId);
                 }
                 if (writer.checkError()) {
                     cleanup();
@@ -900,7 +900,7 @@ public class ClientHandler implements Runnable {
 
     private void cleanup() {
         try {
-            System.out.println("[DIAG] CLEANUP_CALLED");
+            Log.d("[DIAG] CLEANUP_CALLED");
             if (writer != null) {
                     if (pendingWrites.get() > 0) {
                         writer.flush();
@@ -908,24 +908,24 @@ public class ClientHandler implements Runnable {
                     writer.close();
             }
             if (clientSocket == null) {
-                System.out.println("[DIAG] CLEANUP clientSocket=null");
+                Log.d("[DIAG] CLEANUP clientSocket=null");
                 return;
             }
 
             String clientAddr = clientSocket.getInetAddress().getHostAddress();
             int clientPort = clientSocket.getPort();
-            System.out.println("[DIAG] CLEANUP client=" + clientAddr + ":" + clientPort +
+            Log.d("[DIAG] CLEANUP client=" + clientAddr + ":" + clientPort +
                     " closed=" + clientSocket.isClosed() +
                     " connected=" + clientSocket.isConnected());
 
-            System.out.println("[DIAG] CLEANUP poolSize=" + socketPool.size());
+            Log.d("[DIAG] CLEANUP poolSize=" + socketPool.size());
             for (Map.Entry<String, SSLSocket> entry : socketPool.entrySet()) {
                 SSLSocket s = entry.getValue();
                 if (s != null) {
                     String sAddr = s.getInetAddress().getHostAddress();
                     int sPort = s.getPort();
                     boolean match = sAddr.equals(clientAddr) && sPort == clientPort;
-                    System.out.println("  " + entry.getKey() + " -> " + sAddr + ":" + sPort + " match=" + match);
+                    Log.d("  " + entry.getKey() + " -> " + sAddr + ":" + sPort + " match=" + match);
                 }
             }
 
@@ -938,26 +938,26 @@ public class ClientHandler implements Runnable {
                     try {
                         if (s.getPort() == clientPort &&
                                 s.getInetAddress().getHostAddress().equals(clientAddr)) {
-                            System.out.println("[DIAG] CLEANUP_REMOVED_BY_ADDR path=" + entry.getKey());
+                            Log.d("[DIAG] CLEANUP_REMOVED_BY_ADDR path=" + entry.getKey());
                             iterator.remove();
                             removed = true;
                             break;
                         }
                         // 备用：如果地址匹配失败，尝试 ==
                         if (s == clientSocket) {
-                            System.out.println("[DIAG] CLEANUP_REMOVED_BY_REF path=" + entry.getKey());
+                            Log.d("[DIAG] CLEANUP_REMOVED_BY_REF path=" + entry.getKey());
                             iterator.remove();
                             removed = true;
                             break;
                         }
                     } catch (Exception e) {
-                        System.out.println("[DIAG] CLEANUP_CHECK_ERROR " + e.getMessage());
+                        Log.d("[DIAG] CLEANUP_CHECK_ERROR " + e.getMessage());
                     }
                 }
             }
 
             if (!removed) {
-                System.out.println("[DIAG] CLEANUP_NO_MATCH");
+                Log.d("[DIAG] CLEANUP_NO_MATCH");
             }
 
             Iterator<Map.Entry<Integer, SSLSocket>> portIterator = portSocketMap.entrySet().iterator();
@@ -965,7 +965,7 @@ public class ClientHandler implements Runnable {
                 Map.Entry<Integer, SSLSocket> entry = portIterator.next();
                 if (entry.getValue() == clientSocket) {
                     portIterator.remove();
-                    System.out.println("[DIAG] CLEANUP_PORT_REMOVED port=" + entry.getKey());
+                    Log.d("[DIAG] CLEANUP_PORT_REMOVED port=" + entry.getKey());
                     break;
                 }
             }
@@ -974,7 +974,7 @@ public class ClientHandler implements Runnable {
                 clientSocket.close();
             }
         } catch (Exception e) {
-            System.out.println("[DIAG] CLEANUP_EXCEPTION " + e.getMessage());
+            Log.d("[DIAG] CLEANUP_EXCEPTION " + e.getMessage());
         }
     }
     private String findPathBySocket(SSLSocket socket) {
